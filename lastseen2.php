@@ -1,7 +1,6 @@
 <?php
 include("auth/user.php");
 $USER = new User();
-//include("the_db.php");
 include("util.php");
 
 $rkey  = get_get_value("rkey");
@@ -32,9 +31,6 @@ $layer = get_get_value("l");
 if ( $layer === "" ) {
   $layer = "ggl";
 }
-
-//test
-//print_r( get_last_info( null, "f1a242745ed071207894f25ea30d18db" ) );
 ?>
 <html>
 <head>
