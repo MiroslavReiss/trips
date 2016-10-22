@@ -15,9 +15,6 @@
        ...
   sqlite> select *,strftime("%Y%m%d", datetime) as grp from points where grp = "20110912";
   
-  BATCH upload...
-  
-  http://berck.se/trips/show_user.php?userid=f1a242745ed071207894f25ea30d18db
 */
 include("the_db.php");
 include("util.php");
