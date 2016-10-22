@@ -6,7 +6,8 @@ Needs some work to get going.
 calls (GET) the function "add_pt.php" with a number of parameters.
 
 2. The database needs two tables, users and points.
-  * users
+
+#### users
 ~~~~
 sqlite> .schema users
 CREATE TABLE users (
@@ -19,7 +20,15 @@ CREATE TABLE users (
   datetime TEXT
 );
 ~~~~
-  * points
+
+Example
+~~~~
+sqlite> select * from users;
+id|userid|rkey|wkey|name|email|datetime
+1|18675ad1d922346ed56bdeeb1b91cd23|04fda935cfa9f2b7|59a047fe8a050c40|Peter|peter@example.com|2012-07-11 08:08:34
+~~~~
+
+#### points
 ~~~~
 sqlite> .schema points
 CREATE TABLE points (
