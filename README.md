@@ -31,7 +31,7 @@ CREATE TABLE users (
 Example entry:
 ~~~~
 sqlite> select * from users;
-id|userid|rkey|wkey|name|email|datetime
+id|userid|rkey|wkey|name |email|datetime
 1|18675ad1d922346ed56bdeeb1b91cd23|04fda935cfa9f2b7|59a047fe8a050c40|Peter|peter@example.com|2012-07-11 08:08:34
 ~~~~
 
