@@ -479,7 +479,7 @@ function add_gpx($url) {
         $lat=$child2->attributes()->lat;
         $lon=$child2->attributes()->lon;
         $dt = $child2->children()->time;
-        $dt = str_replace($del, " ", $dt); #oderland doesn't accept T/Z in string
+        $dt = str_replace($del, " ", $dt); //oderland doesn't accept T/Z in string
         echo "$dt $lat $lon\n";
         add_pt(NULL, "f1a242745ed071207894f25ea30d18db", "", $lat, $lon, $dt);
   		}
