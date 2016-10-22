@@ -9,16 +9,16 @@ calls (GET) the function "add_pt.php" with a number of parameters.
 
 ..* users
 
-sqlite> .schema users
-CREATE TABLE users (
-	id INTEGER PRIMARY KEY,
- 	userid VARCHAR(32) UNIQUE,
- 	rkey VARCHAR(16) UNIQUE,
- 	wkey VARCHAR(16) UNIQUE,
-  name TEXT,
-  email INTEGER UNIQUE,
-  datetime TEXT
-	);
+>sqlite> .schema users
+>CREATE TABLE users (
+>	id INTEGER PRIMARY KEY,
+> 	userid VARCHAR(32) UNIQUE,
+> 	rkey VARCHAR(16) UNIQUE,
+> 	wkey VARCHAR(16) UNIQUE,
+>  name TEXT,
+>  email INTEGER UNIQUE,
+>  datetime TEXT
+>	);
 
 
 #### Screen shots
