@@ -1,0 +1,66 @@
+<html> 
+<head>
+<style type="text/css">
+
+#new_user {
+	font-size: 16px;
+	font-family: "Lucida Grande", Verdana, Arial, sans-serif;
+}
+
+body {
+	font-size: 16px;
+	font-family: "Lucida Grande", Verdana, Arial, sans-serif;
+	margin: 20px;
+}
+
+</style> 
+    <script type="text/javascript" src="js/jquery-1.10.2.min.js"></script> 
+    <script type="text/javascript" src="js/jquery.form.js"></script> 
+ 
+    <script type="text/javascript"> 
+        // wait for the DOM to be loaded 
+        $(document).ready( function() { 
+          // bind form using ajaxForm 
+          $('#new_user').ajaxForm( { dataType: 'json', beforeSubmit: validate, success: processJson } ); 
+        } );
+        
+        function processJson(data) { 
+          // 'data' is the json object returned from the server 
+          //alert(data.userid); 
+          if ( data.res == -1 ) {
+            alert( "Mail already used. Try again." );
+          } else if ( data.res == 0 ) {
+            alert( "OK." );
+            //warp away? with id=data.userid?
+            window.location="show_user.php?userid="+data.userid;
+          }
+        }
+        
+        function validate(formData, jqForm, options) { 
+          // fieldValue is a Form Plugin method that can be invoked to find the 
+          // current value of a field 
+          // 
+          // To validate, we can capture the values of both the username and password 
+          // fields and return true only if both evaluate to true 
+          var form = jqForm[0];
+          var nameValue  = $('input[name=name]').fieldValue(); 
+          var emailValue = $('input[name=email]').fieldValue(); 
+          if (! nameValue[0] || ! emailValue[0]) { 
+            alert('Please enter a value for both name and email'); 
+            return false; 
+          }
+          return true;
+        }
+    </script> 
+</head>
+<body>
+<form id="new_user" action="new_user_form.php" method="post"> 
+    Name: <input type="text" name="name" /> 
+    <br/>
+    Email: <input type="text" name="email" /> 
+    <br/>
+    Other: <input type="text" name="other" /> 
+    <br/>
+    <input type="submit" value="Submit" /> 
+</form>
+</body>
