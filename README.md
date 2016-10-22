@@ -2,8 +2,10 @@
 
 Needs some work to get going.
 
-1. Expect the database to be filled with points by a tracker. The tracker
+1. Expect the database (trips.sqll) to be filled with points by a tracker. The tracker
 calls (GET) the function "add_pt.php" with a number of parameters.
+
+(I use the https://github.com/durian/tk106server to get the points into the sqlite database.)
 
 ~~~~
 add_pt.php?lat=56.33804&lon=12.89562&wkey=998d1ef610d897aa&acc=30.0&speed=1&bearing=170.7&alt=68&time=1341735161
