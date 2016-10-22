@@ -14,7 +14,7 @@ add_pt.php?lat=56.33804&lon=12.89562&wkey=998d1ef610d897aa&acc=30.0&speed=1&bear
 #### users
 
 The rkey and wkey are the read and write keys. The wkey needs to be
-included in the GET statement when adding a point.
+included in the GET statement when adding a point (see example above).
 ~~~~
 sqlite> .schema users
 CREATE TABLE users (
@@ -28,7 +28,7 @@ CREATE TABLE users (
 );
 ~~~~
 
-Example
+Example entry:
 ~~~~
 sqlite> select * from users;
 id|userid|rkey|wkey|name|email|datetime
@@ -53,6 +53,14 @@ CREATE TABLE points (
   trackid VARCHAR(32),
   comment TEXT,
   dist float);
+~~~~
+
+Example entries:
+~~~~
+sqlite> select * from points order by id asc limit 10;
+id|lat|lon|acc|speed|bearing|alt|type|datetime|gpstime|userid|trackid|comment|dist
+60000|56.13282|13.33143|12.0|24.5|250.2|113.9|0|1444070684|1444070684|f22d8332a3ef367678c1021c13965440|||1542.2188761999
+60001|56.12885|13.30972|11.0|21.5|255.8|114.3|0|1444070746|1444070746|f22d8332a3ef367678c1021c13965440|||1416.3147849256
 ~~~~
 
 #### Screen shots
