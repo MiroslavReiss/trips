@@ -7,7 +7,7 @@ calls (GET) the function "add_pt.php" with a number of parameters.
 
 2. The database needs two tables, users and points.
 
-..* users
+  * users
 
 ~~~~
 sqlite> .schema users
@@ -22,7 +22,7 @@ CREATE TABLE users (
 );
 ~~~~
 
-..* points
+  * points
 
 ~~~~
 sqlite> .schema points
