@@ -36,6 +36,9 @@ id|userid|rkey|wkey|name |email|datetime
 ~~~~
 
 #### points
+
+The points added by add_pt.php.
+
 ~~~~
 sqlite> .schema points
 CREATE TABLE points (
