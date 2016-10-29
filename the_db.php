@@ -62,7 +62,7 @@ function distance($lat1, $lng1, $lat2, $lng2) {
 	$dlng = $lng2 - $lng1;
 	$a = sin($dlat / 2) * sin($dlat / 2) + cos($lat1) * cos($lat2) * sin($dlng / 2) * sin($dlng / 2);
 	$c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-	$m = $r * $c * 1000.0;
+	$m = $r * $c * 1000.0; // return in meters
  
 	return $m;
 }
@@ -109,7 +109,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
     $dist = abs(distance($lat1, $lon1, $lat, $lon));
     // if stationary, first point is type=1, then update second point type=2 until
     // we move. 
-    if ( $dist == 0 ) {
+    if ( $dist < 10 ) { // less than 10 meters
       if ( intVal($row['type']) == 0 ) {
         $type = 1; // store
       } else if ( intVal($row['type']) == 1 ) {
@@ -336,7 +336,7 @@ function get_point_count( $db, $ui ) {
 }
 //Take bearing, put in correct quadrant (0..7) or (0..23)
 function bearing_to_icon( $b ) {
-  $q = abs(intval($b / 5)); #45 for 8 steps, 15 for 24 steps, 5 for 72
+  $q = abs(intval($b / 5)); //45 for 8 steps, 15 for 24 steps, 5 for 72
   $qstr = sprintf("%03d", $q);
   return $qstr;
 }
@@ -471,7 +471,7 @@ function add_gpx($url) {
   			$name = $child2->getName();
   			//print_r($child2);
   			/*foreach($child2->attributes() as $a => $b) {
-           echo $a,'="',$b,"\"\n"; #lat and lon
+           echo $a,'="',$b,"\"\n"; //lat and lon
         }*/
         /*foreach($child2 as $a => $e){
           echo $a,"=",$e,"\n";
