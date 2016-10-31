@@ -47,6 +47,16 @@ function get_userid_from_rkey( $db, $rk ) {
   return $result[0];
 }
 
+function DBG($s) {
+  if ( is_writable("DBG.txt") ) {
+		$fh = fopen("DBG.txt", 'a');
+	  fwrite($fh, date("Y-m-d H:i:s")." ".$_SERVER['REMOTE_ADDR']."\n");
+	  fwrite($fh, $s);
+	  fwrite($fh, "\n");
+	  fclose($fh);
+	 }
+}
+        
 function distance($lat1, $lng1, $lat2, $lng2) {
   if (($lat1==$lat2) && ($lng1==$lng2)) {
     return 0;
@@ -100,6 +110,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
   $result = $stmt->fetchAll();
   $dist = -1;
   $type = 0; // store
+  $ptype = 0; // previous type
   $id = -1;
   if ( $result ) {
     $row = $result[0];
@@ -107,11 +118,12 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
     $lon1 = $row['lon'];
     $id   = intVal($row['id']);
     $dist = abs(distance($lat1, $lon1, $lat, $lon));
+    $ptype = intVal($row['type']); // previous type
     // if stationary, first point is type=1, then update second point type=2 until
     // we move. 
-    if ( $dist < 10 ) { // less than 10 meters
+    if ( $dist < 20 ) { // less than 20 meters
       if ( intVal($row['type']) == 0 ) {
-        $type = 1; // store
+        $type = 2; //PJB  store // this was 1 before until 20161031
       } else if ( intVal($row['type']) == 1 ) {
         $type = 2; // update
       } else {
@@ -119,6 +131,9 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
       }
     }
   }
+  if ( ($ptype==2) && ($type==0) ) { // we started moving after stationary
+	  DBG( "Started moving ".$userid );
+	}
   // uit timediff kunnen we uitrekenen hoelang we stationair zijn
   //$dist = 9999;
   if ( $type == 2 ) {
