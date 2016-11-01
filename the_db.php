@@ -83,7 +83,7 @@ function send_mail($s, $e="__NONE__") {
 
 	$mail->Subject = $s;
 	$message  = "<p>trips webservice\n";
-	$message .= "<p><a href=\"http://berck.se/trips/lastseen2.php?rkey=9ad1b90098faf956\">trips website</a>\n";
+	$message .= "<p><a href=\"http://berck.se/trips/lastseen2.php?rkey=__RKYB__\">trips website</a>\n";
 	$mail->Body    = $message;
 	$mail->AltBody = $message;
 
