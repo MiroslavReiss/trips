@@ -56,7 +56,9 @@ function DBG($s) {
 	  fclose($fh);
 	 }
 }
-function send_mail() {
+
+// Hard coded for B&B at the moment.
+function send_mail($s) {
 	require 'PHPMailer/PHPMailerAutoload.php';
 	DBG("mail");
 	$mail = new PHPMailer;
@@ -77,8 +79,9 @@ function send_mail() {
 	$mail->WordWrap = 70;            // Set word wrap to 50 characters
 	$mail->isHTML(true);     // Set email format to HTML (hmmmm)
 
-	$mail->Subject = 'Movement detected';
+	$mail->Subject = $s;
 	$message  = "trips webservice\n";
+	$message .= '<a href="http://berck.se/trips/lastseen2.php?rkey=9ad1b90098faf956">trips website</a>\n';
 	$mail->Body    = $message;
 	$mail->AltBody = $message;
 
@@ -154,7 +157,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
     $ptype = intVal($row['type']); // previous type
     // if stationary, first point is type=1, then update second point type=2 until
     // we move. 
-    if ( $dist < 20 ) { // less than 20 meters
+    if ( $dist < 50 ) { // less than 50 meters COULD BE A USER PARAMETER!
       if ( intVal($row['type']) == 0 ) {
         $type = 2; //PJB  store // this was 1 before until 20161031
       } else if ( intVal($row['type']) == 1 ) {
@@ -164,13 +167,15 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
       }
     }
   }
-  // problem with dist >99 is if it is possible to move this distance
-  // inside a cycle... 99 > 20 (above) so we could be not stationary,
-  // and not get an email.
-  if ( ($ptype==2) && ($type==0) && ($dist > 99) ) { // we started moving after stationary
+  if ( ($ptype==2) && ($type==0) && ($dist >=50) ) { // we started moving after stationary
 	  DBG( "Started moving ".$userid );
 	  if ( $userid == "706c92f282dfc7499b2413c1d7a48c7a" ) {
-		  send_mail();
+		  send_mail("Movement detected");
+		}
+	} else if ( ($ptype == 0) && ($type == 2) ) {
+		DBG( "Stopped moving ".$userid );
+	  if ( $userid == "706c92f282dfc7499b2413c1d7a48c7a" ) {
+		  send_mail("Stopped moving");
 		}
 	}
   // uit timediff kunnen we uitrekenen hoelang we stationair zijn
@@ -450,6 +455,11 @@ function db_result_to_geojson( $res ) {
       $sc = "00";
       $q = "000";
     }
+		if ( intval($r['type']) == 2 ) { // PJB if in stationary mode (type==2), explicit circle
+			$icn = "stationary";
+      $sc = "00";
+      $q = "000";
+		}
     $kts = sprintf("%.2f", $speed * 0.539956803);
     $alt_ft = sprintf("%.0f", floatval($r['alt']) * 3.2808399);
     $dist_m = sprintf("%.1f", floatval( $r['dist'] )); //meter
