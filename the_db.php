@@ -58,7 +58,7 @@ function DBG($s) {
 }
 
 // Hard coded for B&B at the moment.
-function send_mail($s) {
+function send_mail($s, $e="__NONE__") {
 	require 'PHPMailer/PHPMailerAutoload.php';
 	DBG("mail");
 	$mail = new PHPMailer;
@@ -73,7 +73,9 @@ function send_mail($s) {
 	$mail->From = '__FROM__'; // OR f_email
 	$mail->FromName = 'TRIPS';
 	$mail->addAddress('__ADR1__');
-	$mail->addAddress('__ADR2__');
+	if ( $e !== "__NONE__" ) {
+		$mail->addAddress($e); 
+	}
 	$mail->CharSet = 'UTF-8';
 
 	$mail->WordWrap = 70;            // Set word wrap to 50 characters
@@ -172,13 +174,17 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
   }
   if ( ($ptype==2) && ($type==0) && ($dist >=50) ) { // we started moving after stationary
 	  DBG( "Started moving ".$userid );
-	  if ( $userid == "706c92f282dfc7499b2413c1d7a48c7a" ) {
-		  send_mail("Movement detected");
+	  if ( $userid == "__UIDB__" ) {
+		  send_mail("Movement detected", "__ADR2__");
+		} else {
+			send_mail("Movement detected(".$userid.")");
 		}
 	} else if ( ($ptype == 0) && ($type == 2) ) {
 		DBG( "Stopped moving ".$userid );
-	  if ( $userid == "706c92f282dfc7499b2413c1d7a48c7a" ) {
-		  send_mail("Stopped moving");
+	  if ( $userid == "__UIDB__" ) {
+		  send_mail("Stopped moving", "__ADR2__");
+		} else {
+			send_mail("Stopped moving (".$userid.")");
 		}
 	}
   // uit timediff kunnen we uitrekenen hoelang we stationair zijn
