@@ -58,7 +58,7 @@ function DBG($s) {
 }
 
 // Hard coded for B&B at the moment.
-function send_mail($s, $e="__NONE__") {
+function send_mail($s, $e="__NONE__", $a) {
 	require 'PHPMailer/PHPMailerAutoload.php';
 	DBG("mail");
 	$mail = new PHPMailer;
@@ -84,6 +84,7 @@ function send_mail($s, $e="__NONE__") {
 	$mail->Subject = $s;
 	$message  = "<p>trips webservice\n";
 	$message .= "<p><a href=\"http://berck.se/trips/lastseen2.php?rkey=__RKYB__\">trips website</a>\n";
+	$message .= "<p>".$a;
 	$mail->Body    = $message;
 	$mail->AltBody = $message;
 
@@ -173,19 +174,46 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
     }
   }
   if ( ($ptype==2) && ($type==0) && ($dist >=50) ) { // we started moving after stationary
+	  
+ 		$feedUrl = 'http://nominatim.openstreetmap.org/reverse.php?email=__ADR1__&format=xml&lat='.$lat.'&lon='.$lon;
+		DBG( $feedUrl );
+		$rawFeed = file_get_contents($feedUrl);
+		$xml = new SimpleXmlElement($rawFeed);
+		//$foo = array( (string) $xml->channel->item->title );
+		//DBG($foo);
+		DBG( $xml->asXML() );
+		$adr = "Unable to get address.";
+		if ( $xml->result ) {
+			$adr = $xml->result;
+		}
+		DBG( $adr );
+
 	  DBG( "Started moving ".$userid );
 	  if ( $userid == "__UIDB__" ) {
-		  send_mail("Movement detected", "__ADR2__");
+		  send_mail("Movement detected", "__ADR2__", $adr);
 		} else {
-			send_mail("Movement detected(".$userid.")");
+			send_mail("Movement detected(".$userid.")", "__NONE__", $adr);
 		}
 	} else if ( ($ptype == 0) && ($type == 2) ) {
+ 		$feedUrl = 'http://nominatim.openstreetmap.org/reverse.php?email=__ADR1__&format=xml&lat='.$lat.'&lon='.$lon;
+		DBG( $feedUrl );
+		$rawFeed = file_get_contents($feedUrl);
+		$xml = new SimpleXmlElement($rawFeed);
+		//$foo = array( (string) $xml->channel->item->title );
+		//DBG($foo);
+		DBG( $xml->asXML() );
+		$adr = "Unable to get address.";
+		if ( $xml->result ) {
+			$adr = $xml->result;
+		}
+		DBG( $adr );
+
 		DBG( "Stopped moving ".$userid );
 	  if ( $userid == "__UIDB__" ) {
-		  send_mail("Stopped moving", "__ADR2__");
+		  send_mail("Stopped moving", "__ADR2__", $adr);
 		} else {
-			send_mail("Stopped moving (".$userid.")");
-		}
+			send_mail("Stopped moving (".$userid.")", "__NONE__", $adr);
+		}	
 	}
   // uit timediff kunnen we uitrekenen hoelang we stationair zijn
   //$dist = 9999;

@@ -40,8 +40,9 @@ if True:
     lat = 56.26434113
     lon = 12.87838519
     delay = 4
-    for x in range(0,10):
-        time.sleep(delay)
+    for x in range(0,6):
+        if x > 0:
+            time.sleep(delay)
         dt += delay
         full = trips_url+"?lat="+str(lat)+"&lon="+str(lon)+"&wkey="+trips_wkey+"&dt="+str(dt)+"&comment=pt"+str(x)
         print( full )
