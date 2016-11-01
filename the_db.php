@@ -175,7 +175,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
   }
   if ( ($ptype==2) && ($type==0) && ($dist >=50) ) { // we started moving after stationary
 	  
- 		$feedUrl = 'http://nominatim.openstreetmap.org/reverse.php?email=__ADR1__&format=xml&lat='.$lat.'&lon='.$lon;
+ 		$feedUrl = 'http://nominatim.openstreetmap.org/reverse.php?email=__ADR1__&addressdetails=0&format=xml&lat='.$lat.'&lon='.$lon;
 		DBG( $feedUrl );
 		$rawFeed = file_get_contents($feedUrl);
 		$xml = new SimpleXmlElement($rawFeed);
@@ -195,7 +195,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
 			send_mail("Movement detected(".$userid.")", "__NONE__", $adr);
 		}
 	} else if ( ($ptype == 0) && ($type == 2) ) {
- 		$feedUrl = 'http://nominatim.openstreetmap.org/reverse.php?email=__ADR1__&format=xml&lat='.$lat.'&lon='.$lon;
+ 		$feedUrl = 'http://nominatim.openstreetmap.org/reverse.php?email=__ADR1__&addressdetails=0&format=xml&lat='.$lat.'&lon='.$lon;
 		DBG( $feedUrl );
 		$rawFeed = file_get_contents($feedUrl);
 		$xml = new SimpleXmlElement($rawFeed);
