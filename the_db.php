@@ -82,8 +82,8 @@ function send_mail($s, $e="__NONE__") {
 	$mail->isHTML(true);     // Set email format to HTML (hmmmm)
 
 	$mail->Subject = $s;
-	$message  = "trips webservice\n";
-	$message .= '<a href="http://berck.se/trips/lastseen2.php?rkey=9ad1b90098faf956">trips website</a>\n';
+	$message  = "<p>trips webservice\n";
+	$message .= "<p><a href=\"http://berck.se/trips/lastseen2.php?rkey=9ad1b90098faf956\">trips website</a>\n";
 	$mail->Body    = $message;
 	$mail->AltBody = $message;
 
