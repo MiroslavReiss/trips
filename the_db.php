@@ -56,7 +56,40 @@ function DBG($s) {
 	  fclose($fh);
 	 }
 }
-        
+function send_mail() {
+	require 'PHPMailer/PHPMailerAutoload.php';
+	DBG("mail");
+	$mail = new PHPMailer;
+
+	$mail->isSMTP();
+	$mail->Host = '__HOST__:465';
+	$mail->SMTPAuth = true;
+	$mail->Username = '__USER__';
+	$mail->Password = '__PASS__';
+	$mail->SMTPSecure = 'ssl';
+
+	$mail->From = '__FROM__'; // OR f_email
+	$mail->FromName = 'TRIPS';
+	$mail->addAddress('__ADR1__');
+	$mail->addAddress('__ADR2__');
+	$mail->CharSet = 'UTF-8';
+
+	$mail->WordWrap = 70;            // Set word wrap to 50 characters
+	$mail->isHTML(true);     // Set email format to HTML (hmmmm)
+
+	$mail->Subject = 'Movement detected';
+	$message  = "trips webservice\n";
+	$mail->Body    = $message;
+	$mail->AltBody = $message;
+
+	if(!$mail->send()) {
+		DBG("error sending.");
+		DBG($mail->ErrorInfo);
+	} else {
+		DBG("mail sent.");
+	}
+}
+
 function distance($lat1, $lng1, $lat2, $lng2) {
   if (($lat1==$lat2) && ($lng1==$lng2)) {
     return 0;
@@ -131,8 +164,14 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
       }
     }
   }
-  if ( ($ptype==2) && ($type==0) ) { // we started moving after stationary
+  // problem with dist >99 is if it is possible to move this distance
+  // inside a cycle... 99 > 20 (above) so we could be not stationary,
+  // and not get an email.
+  if ( ($ptype==2) && ($type==0) && ($dist > 99) ) { // we started moving after stationary
 	  DBG( "Started moving ".$userid );
+	  if ( $userid == "706c92f282dfc7499b2413c1d7a48c7a" ) {
+		  send_mail();
+		}
 	}
   // uit timediff kunnen we uitrekenen hoelang we stationair zijn
   //$dist = 9999;
@@ -263,19 +302,26 @@ function get_last_stationary( $db, $ui ) {
     $stmt->execute( array(':userid' => $ui) );
     $result = $stmt->fetchAll();
     
-    if ( $result > 2 ) {
+    if ( $result > 1 ) {
       $row = $result[0];
       $lat0 = $row['lat'];
       $lon0 = $row['lon'];
       $gpstime0 = $row['gpstime'];
+      $type0 = $row['type'];
       
       $row = $result[1];
       $lat1 = $row['lat'];
       $lon1 = $row['lon'];
       $gpstime1 = $row['gpstime'];
+      $type1 = $row['type'];
       
-      $dist = abs(distance($lat1, $lon1, $lat0, $lon0));
-      $tdiff = $gpstime0-$gpstime1;
+      // better to look at type==2 in DB
+      $dist = 0;
+      $tdiff = 0;
+      if ( $type0 == 2 ) {
+	      $dist = abs(distance($lat1, $lon1, $lat0, $lon0));
+				$tdiff = $gpstime0-$gpstime1;
+			}
       return array( 'tdiff' => $tdiff, 'tbits' => seconds_to_time($tdiff), 'dist' => $dist, "tdiff_str" => secs2str($tdiff));
     }
   } catch (PDOException $e) {

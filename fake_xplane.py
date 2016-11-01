@@ -39,7 +39,7 @@ if True:
     print( project( (56.27332433495336, 12.87838519), 1, 0) )
     lat = 56.26434113
     lon = 12.87838519
-    delay = 10
+    delay = 4
     for x in range(0,10):
         time.sleep(delay)
         dt += delay

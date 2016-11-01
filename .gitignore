@@ -5,3 +5,7 @@ leaflet_master
 auth
 notes.txt
 *~
+hide.sh
+show.sh
+*.php0
+the_db1.php

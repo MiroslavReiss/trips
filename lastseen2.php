@@ -310,7 +310,7 @@ function get_last_stationary() {
   $.getJSON('get_last_stationary.php', {'rkey':'<?=$rkey?>'}, function(res) {
     if (res != false) {
       var other_info_str = "";
-      if ( res.dist == 0 ) {
+      if ( (res.dist < 20) && (res.tdiff > 0) ) { // note this is also coded like this in add_pt (in the_db.php)
         other_info_str = "Stationary for "+res.tdiff_str;
       }
       $("#stationary").html(other_info_str);
