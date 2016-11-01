@@ -136,7 +136,7 @@ CREATE TABLE points (
 function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $dt, $trackid, $comment) {
 
   if ( $db == NULL ) {
-    $db = get_db();
+    $db = get_db(); // maybe name depending on userid? But Db contains users also
   }
   //$data = array( 'lat' => 53, 'lon' => 12, 'userid' => "xxx", 'datetime' => "2011-09-12 20:02:11" );
 
@@ -154,10 +154,13 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
     $lon1 = $row['lon'];
     $id   = intVal($row['id']);
     $dist = abs(distance($lat1, $lon1, $lat, $lon));
+    $tdiff = intVal($dt)-intVal($row['gpstime']);
     $ptype = intVal($row['type']); // previous type
     // if stationary, first point is type=1, then update second point type=2 until
     // we move. 
-    if ( $dist < 50 ) { // less than 50 meters COULD BE A USER PARAMETER!
+    // should be a timediff limit too, if > 24hrs, reset type=2 or something.
+    // instead of type=2 we could have a counter 
+    if ( ($dist < 50) && ($tdiff < (24*3600)) ) { // less than 50 meters COULD BE A USER PARAMETER!
       if ( intVal($row['type']) == 0 ) {
         $type = 2; //PJB  store // this was 1 before until 20161031
       } else if ( intVal($row['type']) == 1 ) {
@@ -192,6 +195,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
   }
 }
 
+// this is prolly only called from tk10n-server
 function add_info($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $type, $dt, $trackid, $comment) {
 
   if ( $db == NULL ) {
