@@ -10,3 +10,4 @@ show.sh
 *.php0
 the_db1.php
 *.pxm
+.DS_Store

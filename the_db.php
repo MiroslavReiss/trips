@@ -64,13 +64,14 @@ function send_mail($s, $e="__NONE__", $a) {
 	$mail = new PHPMailer;
 
 	$mail->isSMTP();
-	$mail->Host = '__HOST__:465';
+	$mail->Host = '__SMTP__';
+	$mail->Port = 587;
 	$mail->SMTPAuth = true;
-	$mail->Username = '__USER__';
-	$mail->Password = '__PASS__';
-	$mail->SMTPSecure = 'ssl';
+	$mail->Username = '__USRT__';
+	$mail->Password = '__PAST__';
+	$mail->SMTPSecure = 'tls';
 
-	$mail->From = '__FROM__'; // OR f_email
+	$mail->From = '__USRT__'; // OR f_email
 	$mail->FromName = 'TRIPS';
 	$mail->addAddress('__ADR1__');
 	if ( $e !== "__NONE__" ) {
@@ -116,6 +117,20 @@ function distance($lat1, $lng1, $lat2, $lng2) {
 	return $m;
 }
 
+function rev_geocode($lat, $lon) {
+	$feedUrl = 'http://nominatim.openstreetmap.org/reverse.php?email=__ADR1__&addressdetails=0&format=xml&lat='.$lat.'&lon='.$lon;
+	DBG( $feedUrl );
+	$rawFeed = file_get_contents($feedUrl);
+	$xml = new SimpleXmlElement($rawFeed);
+	DBG( $xml->asXML() );
+	$adr = "Unable to get address.";
+	if ( $xml->result ) {
+		$adr = $xml->result;
+	}
+	DBG( $adr );
+	return $adr;
+}
+
 /*
 sqlite> .schema points
 CREATE TABLE points (
@@ -136,7 +151,7 @@ CREATE TABLE points (
         );
 */
 // Higher types (>100) for user warnings/info? Seperate info table! similar to points (identical)
-function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $dt, $trackid, $comment) {
+function add_pt_OLD($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $dt, $trackid, $comment) {
 
   if ( $db == NULL ) {
     $db = get_db(); // maybe name depending on userid? But Db contains users also
@@ -149,7 +164,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
   $result = $stmt->fetchAll();
   $dist = -1;
   $type = 0; // store
-  $ptype = 0; // previous type
+  $ptype = 0; // default type
   $id = -1;
   if ( $result ) {
     $row = $result[0];
@@ -163,16 +178,21 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
     // we move. 
     // should be a timediff limit too, if > 24hrs, reset type=2 or something.
     // instead of type=2 we could have a counter 
+    
+    // If less than 40 meters, less than 24 hrs and more than 5 minutes, we determine
+    // we are stationary by setting type to 2.
+    // maybe better to check accuracy...
+    
     if ( ($dist < 50) && ($tdiff < (24*3600)) ) { // less than 50 meters COULD BE A USER PARAMETER!
-      if ( intVal($row['type']) == 0 ) {
+      if ( $ptype == 0 ) {
         $type = 2; //PJB  store // this was 1 before until 20161031
-      } else if ( intVal($row['type']) == 1 ) {
-        $type = 2; // update
       } else {
         $type = 2;
       }
     }
   }
+  // too many mails - maybe uses type-counter, and mail when type > n
+  // or a timediff, and not send more than x mails per n minutes.
   if ( ($ptype==2) && ($type==0) && ($dist >=50) ) { // we started moving after stationary
 	  
  		$feedUrl = 'http://nominatim.openstreetmap.org/reverse.php?email=__ADR1__&addressdetails=0&format=xml&lat='.$lat.'&lon='.$lon;
@@ -189,10 +209,10 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
 		DBG( $adr );
 
 	  DBG( "Started moving ".$userid );
-	  if ( $userid == "__UIDB__" ) {
-		  send_mail("Movement detected", "__ADR2__", $adr);
+	  if ( ($userid==="__UIDB__") || ($userid==="__UIDE__") ) {
+		  send_mail("Movement detected", "__USRT__", $adr);
 		} else {
-			send_mail("Movement detected(".$userid.")", "__NONE__", $adr);
+			//send_mail("Movement detected(".$userid.")", "__NONE__", $adr);
 		}
 	} else if ( ($ptype == 0) && ($type == 2) ) {
  		$feedUrl = 'http://nominatim.openstreetmap.org/reverse.php?email=__ADR1__&addressdetails=0&format=xml&lat='.$lat.'&lon='.$lon;
@@ -209,10 +229,10 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
 		DBG( $adr );
 
 		DBG( "Stopped moving ".$userid );
-	  if ( $userid == "__UIDB__" ) {
-		  send_mail("Stopped moving", "__ADR2__", $adr);
+	  if ( ($userid==="__UIDB__") || ($userid==="__UIDE__") ) {
+		  send_mail("Stopped moving", "__USRT__", $adr);
 		} else {
-			send_mail("Stopped moving (".$userid.")", "__NONE__", $adr);
+			//send_mail("Stopped moving (".$userid.")", "__NONE__", $adr);
 		}	
 	}
   // uit timediff kunnen we uitrekenen hoelang we stationair zijn
@@ -227,6 +247,91 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
     $stmt = $db->prepare("INSERT INTO points (userid, lat, lon, acc, speed, bearing, alt, type, datetime, gpstime, trackid, comment, dist) VALUES (:userid, :lat, :lon, :acc, :speed, :bearing, :alt, :type, :datetime, :gpstime, :trackid, :comment, :dist);");
     $stmt->execute( $data );
   }
+  $db->close();
+}
+
+/*
+	NEW TEST
+*/
+function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $dt, $trackid, $comment) {
+
+  if ( $db == NULL ) {
+    $db = get_db(); // maybe name depending on userid? But Db contains users also
+  }
+  //$data = array( 'lat' => 53, 'lon' => 12, 'userid' => "xxx", 'datetime' => "2011-09-12 20:02:11" );
+
+  // Get previous latlon.
+  $stmt = $db->prepare("select * from points where userid = :userid order by id desc limit 1");
+  $stmt->execute( array(':userid' => $userid) );
+  $result = $stmt->fetchAll();
+  $dist = -1;
+  $type = 0; // store
+  $ptype = 0; // default type
+  $id = -1;
+  
+  if ( $result ) { // The point last saved
+    $row = $result[0];
+    $lat1 = $row['lat'];
+    $lon1 = $row['lon'];
+    $id   = intVal($row['id']);
+    $dist = abs(distance($lat1, $lon1, $lat, $lon));
+    $tdiff = intVal($dt)-intVal($row['gpstime']);
+    $ptype = intVal($row['type']); // previous type
+    
+    if ( ($dist < 50) && ($tdiff < (24*3600)) ) { // less than 50 meters COULD BE A USER PARAMETER!
+      if ( $ptype == 0 ) {
+        $type = 1; //PJB  store // this was 1 before until 20161031
+      } else {
+        $type = $ptype+1; // increment
+      }
+    }
+  } // end result
+  
+  // W can mail if:
+  // type == 3, then we are stationary a few points,
+  // we go to 0, then we start moving, but we should check if the last 2 (or more)
+  // points are 0..., after one that is > 0 ? how to count moves?
+  
+  if ( $type == 3 ) {
+	  DBG("TYPE is 3, considered stopped.");
+	  $dt_str = date("Y-m-d H:i:s");
+	  if ( $userid==="__UIDB__" ) {
+		  $adr = rev_geocode($lat, $lon);
+		  send_mail("Berit stopped moving ".$dt_str, "__USRT__", $adr);
+		} else if ( $userid==="__UIDE__" ) {
+		  $adr = rev_geocode($lat, $lon);
+		  send_mail("Bengt stopped moving ".$dt_str, "__USRT__", $adr);
+		} else {
+			send_mail("Movement stopped(".$userid.") ".$dt_str, "__NONE__", $adr);
+		}
+	}
+	if ( ($ptype >= 2) && ($type == 0) ) {
+		DBG("TYPE is 0 again, considered moving.");
+		$dt_str = date("Y-m-d H:i:s");
+	  if ( $userid==="__UIDB__" ) {
+		  $adr = rev_geocode($lat, $lon);
+		  send_mail("Berit started moving ".$dt_str, "__USRT__", $adr);
+		} else if ( $userid==="__UIDE__" ) {
+		  $adr = rev_geocode($lat, $lon);
+		  send_mail("Bengt started moving ".$dt_str, "__USRT__", $adr);
+		} else {
+			send_mail("Movement started(".$userid.") ".$dt_str, "__NONE__", $adr);
+		}
+	}
+  
+  // types 0 and one are saved as new, and higher is updated.
+  if ( $type > 1 ) {
+	  // We update the time and the type, not the position/bearing/etc!
+    $stmt = $db->prepare("UPDATE points SET datetime=".$dt.",gpstime=".$dt.",type=".$type." WHERE (id=".$id.");");
+    //error_log("UPDATE points SET datetime=".$dt.",gpstime=".$dt.",type=".$type." WHERE (id=".$id.");");
+    $data = array('datetime' => $dt, 'gpstime' => $dt, 'type' => $type);
+    $stmt->execute();
+  } else { 
+    $data = array( 'lat' => $lat, 'lon' => $lon, 'userid' => $userid, 'acc' => $acc, 'speed' => $speed, 'bearing' => $bearing, 'alt' => $alt, 'type' => $type, 'datetime' => $dt, 'gpstime' => $dt, 'trackid' => $trackid, 'comment' => $comment, 'dist' => $dist );
+    $stmt = $db->prepare("INSERT INTO points (userid, lat, lon, acc, speed, bearing, alt, type, datetime, gpstime, trackid, comment, dist) VALUES (:userid, :lat, :lon, :acc, :speed, :bearing, :alt, :type, :datetime, :gpstime, :trackid, :comment, :dist);");
+    $stmt->execute( $data );
+  }
+  $db->close();
 }
 
 // this is prolly only called from tk10n-server
@@ -361,7 +466,7 @@ function get_last_stationary( $db, $ui ) {
       // better to look at type==2 in DB
       $dist = 0;
       $tdiff = 0;
-      if ( $type0 == 2 ) {
+      if ( $type0 > 2 ) { // stationary starts at type=3
 	      $dist = abs(distance($lat1, $lon1, $lat0, $lon0));
 				$tdiff = $gpstime0-$gpstime1;
 			}
@@ -493,7 +598,7 @@ function db_result_to_geojson( $res ) {
       $sc = "00";
       $q = "000";
     }
-		if ( intval($r['type']) == 2 ) { // PJB if in stationary mode (type==2), explicit circle
+		if ( intval($r['type']) >= 2 ) { // PJB if in stationary mode (type==2), explicit circle
 			$icn = "stationary";
       $sc = "00";
       $q = "000";

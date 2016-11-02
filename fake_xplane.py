@@ -33,41 +33,55 @@ trips_wkey = "e176e1487d5834a0"
 dt = 880000000 # Thu, 20 Nov 1997 04:26:40 GMT
 dt = int(time.time())
 
+# Start
+lat = 56.26434113
+lon = 12.87838519
+cnt = 0
+
 if True:
-    print( project( (56.26434113, 12.87838519), 1, 0) )
-    # gives :
-    print( project( (56.27332433495336, 12.87838519), 1, 0) )
-    lat = 56.26434113
-    lon = 12.87838519
-    delay = 4
-    for x in range(0,6):
+    delay = 1
+    for x in range(0,4):
         if x > 0:
             time.sleep(delay)
         dt += delay
-        full = trips_url+"?lat="+str(lat)+"&lon="+str(lon)+"&wkey="+trips_wkey+"&dt="+str(dt)+"&comment=pt"+str(x)
+        full = trips_url+"?lat="+str(lat)+"&lon="+str(lon)+"&wkey="+trips_wkey+"&dt="+str(dt)+"&comment=pt"+str(cnt)
+        cnt += 1
         print( full )
         r = requests.get(full)
         print( r.status_code )
         print( "--" )
-        lat, lon = project( (lat, lon), 0.01, 0) #10 meters
-    sys.exit(1)
-    '''
-    id|lat|lon|acc|speed|bearing|alt|type|datetime|gpstime|userid|trackid|comment|dist
-    317735|56.26434113|12.87838519|||||0|1477901512|1477901512|fc011c0d9d440c5da0d30324f0bf90ce|||-1.0
-    317736|56.26443096204952|12.87838519|||||2|1477901542|1477901542|fc011c0d9d440c5da0d30324f0bf90ce|||9.9916856107071
-    317737|56.26470045819812|12.87838519|||||0|1477901552|1477901552|fc011c0d9d440c5da0d30324f0bf90ce|||29.975056834244
-    317738|56.264790290247646|12.87838519|||||2|1477901582|1477901582|fc011c0d9d440c5da0d30324f0bf90ce|||9.9916856107071
-    317739|56.26505978639623|12.87838519|||||0|1477901592|1477901592|fc011c0d9d440c5da0d30324f0bf90ce|||29.975056833536
-    317740|56.265149618445754|12.87838519|||||1|1477901602|1477901602|fc011c0d9d440c5da0d30324f0bf90ce|||9.9916856107071
+        lat, lon = project( (lat, lon), 0.1, 0) #100 meters
 
-    NEW
-    sqlite> select * from points where userid="fc011c0d9d440c5da0d30324f0bf90ce" limit 20;
-    id|lat|lon|acc|speed|bearing|alt|type|datetime|gpstime|userid|trackid|comment|dist
-    317735|56.26434113|12.87838519|||||2|1477902102|1477902102|fc011c0d9d440c5da0d30324f0bf90ce||pt0|-1.0
-    317736|56.26461062614859|12.87838519|||||2|1477902105|1477902105|fc011c0d9d440c5da0d30324f0bf90ce||pt3|29.975056833536
-    317737|56.26488012229717|12.87838519|||||2|1477902108|1477902108|fc011c0d9d440c5da0d30324f0bf90ce||pt6|29.975056832829
-    317738|56.265149618445754|12.87838519|||||0|1477902109|1477902109|fc011c0d9d440c5da0d30324f0bf90ce||pt9|29.975056833536
-    '''
+    # stationary
+    print( lat, lon )
+    delay = 20
+    for x in range(0,4):
+        time.sleep(delay)
+        dt += delay
+        full = trips_url+"?lat="+str(lat)+"&lon="+str(lon)+"&wkey="+trips_wkey+"&dt="+str(dt)+"&comment=pt"+str(cnt)
+        cnt += 1
+        print( full )
+        r = requests.get(full)
+        print( r.status_code )
+        print( "--" )
+        lat, lon = project( (lat, lon), 0.005, 0) #5 meters
+
+    # stationary
+    print( lat, lon )
+    for x in range(0,4):
+        time.sleep(delay)
+        dt += delay
+        full = trips_url+"?lat="+str(lat)+"&lon="+str(lon)+"&wkey="+trips_wkey+"&dt="+str(dt)+"&comment=pt"+str(cnt)
+        cnt += 1
+        print( full )
+        r = requests.get(full)
+        print( r.status_code )
+        print( "--" )
+        lat, lon = project( (lat, lon), 0.1, 0) #100 meters
+        
+sys.exit(1)
+
+
 
 # time delay, lat, lon
 points = [
@@ -149,6 +163,7 @@ met lege DB en:
  (10, 56.26427558, 12.87884653)  # +15 meter
 
 sqlite> .header on
+
 sqlite> select * from points where userid="fc011c0d9d440c5da0d30324f0bf90ce" limit 10;
 id|lat|lon|acc|speed|bearing|alt|type|datetime|gpstime|userid|trackid|comment|dist
 317735|56.26434113|12.87838519|||||0|1477898541|1477898541|fc011c0d9d440c5da0d30324f0bf90ce|||-1.0
