@@ -268,7 +268,11 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
   $type = 0; // store
   $ptype = 0; // default type
   $id = -1;
-  
+  $dist_limit = 50; // inside this is stationary
+  if ( $userid==="__UIDB__" ) { // Berit
+	  $dist_limit = 200;
+	}
+
   if ( $result ) { // The point last saved
     $row = $result[0];
     $lat1 = $row['lat'];
@@ -278,9 +282,9 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
     $tdiff = intVal($dt)-intVal($row['gpstime']);
     $ptype = intVal($row['type']); // previous type
     
-    if ( ($dist < 50) && ($tdiff < (24*3600)) ) { // less than 50 meters COULD BE A USER PARAMETER!
+    if ( ($dist < $dist_limit) && ($tdiff < (24*3600)) ) { // less than 50 meters COULD BE A USER PARAMETER!
       if ( $ptype == 0 ) {
-        $type = 1; //PJB  store 
+        $type = 1; //PJB  store as new point type 1
       } else {
         $type = $ptype+1; // increment
       }
@@ -339,9 +343,10 @@ id|lat|lon|acc|speed|bearing|alt|type|datetime|gpstime|userid|trackid|comment|di
 	}
   
   // if type==0 after a long time, we notice new activity
-  if ( ($type==0) && ($tdiff >= (24*3600) ) {
+  if ( ($type==0) && ($tdiff >= (24*3600)) ) {
 	  DBG("New activity.");
-	  send_mail("New activity(".$userid.") ".$dt_str, "__NONE__", $adr);
+	  $dt_str = date("Y-m-d H:i:s");
+	  send_mail("New activity(".$userid.") ".$dt_str, "__NONE__", "");
 	}
 	
   // types 0 and one are saved as new points, a higher type updates the current
