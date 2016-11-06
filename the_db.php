@@ -251,7 +251,7 @@ function add_pt_OLD($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $al
 }
 
 /*
-	NEW TEST
+	NEW.
 */
 function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $dt, $trackid, $comment) {
 
@@ -280,14 +280,32 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
     
     if ( ($dist < 50) && ($tdiff < (24*3600)) ) { // less than 50 meters COULD BE A USER PARAMETER!
       if ( $ptype == 0 ) {
-        $type = 1; //PJB  store // this was 1 before until 20161031
+        $type = 1; //PJB  store 
       } else {
         $type = $ptype+1; // increment
       }
     }
   } // end result
   
-  // W can mail if:
+  // A special "?" type is accuracy large, which does not trigger stationary/moving?
+  if ( intVal($acc) > 200 ) { // arbitrary accuracy...
+    /*
+      We get an extra "stopped moving" mail because of the -1
+id|lat|lon|acc|speed|bearing|alt|type|datetime|gpstime|userid|trackid|comment|dist
+319100|56.24548|12.88680|10.0|0.2|312.1|26.9| 6|1478252167|1478252167|__UIDB__|||10.285348929898
+319099|56.24553|12.88666|18.0|0.0| 51.7|24.7| 0|1478251049|1478251049|__UIDB__|||37.86443668298
+319098|56.24568|12.88611|25.0|0.3| 77.1|26.3|-1|1478250988|1478250988|__UIDB__|||59.436627498317
+319097|56.33824|12.89541| 8.0|0.2| 76.3|98.2| 1|1478207126|1478207126|18657add1922436ed56bdeeb1b91cd23|||14.053842046595
+319096|56.33833|12.89557| 6.0|0.0| 76.3|95.5| 0|1478207089|1478207089|18657add1922436ed56bdeeb1b91cd23|||210.50477811318
+*/
+		if ( $type == 0 ) {
+  		$type = -1;  
+    } else {
+      $type = -$ptype;
+    }
+    DBG("minus one ".$type);
+	}
+  // We can mail if:
   // type == 3, then we are stationary a few points,
   // we go to 0, then we start moving, but we should check if the last 2 (or more)
   // points are 0..., after one that is > 0 ? how to count moves?
@@ -305,6 +323,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
 			send_mail("Movement stopped(".$userid.") ".$dt_str, "__NONE__", $adr);
 		}
 	}
+	// Previous type is 3 or larger, and new type is 0 again
 	if ( ($ptype >= 2) && ($type == 0) ) {
 		DBG("TYPE is 0 again, considered moving.");
 		$dt_str = date("Y-m-d H:i:s");
@@ -319,10 +338,17 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
 		}
 	}
   
-  // types 0 and one are saved as new, and higher is updated.
+  // if type==0 after a long time, we notice new activity
+  if ( ($type==0) && ($tdiff >= (24*3600) ) {
+	  DBG("New activity.");
+	  send_mail("New activity(".$userid.") ".$dt_str, "__NONE__", $adr);
+	}
+	
+  // types 0 and one are saved as new points, a higher type updates the current
+  // type with new time and type.
   if ( $type > 1 ) {
 	  // We update the time and the type, not the position/bearing/etc!
-    $stmt = $db->prepare("UPDATE points SET datetime=".$dt.",gpstime=".$dt.",type=".$type." WHERE (id=".$id.");");
+    $stmt = $db->prepare("UPDATE points SET datetime=".$dt.",gpstime=".$dt.",type=".$type.",acc=".$acc." WHERE (id=".$id.");");
     //error_log("UPDATE points SET datetime=".$dt.",gpstime=".$dt.",type=".$type." WHERE (id=".$id.");");
     $data = array('datetime' => $dt, 'gpstime' => $dt, 'type' => $type);
     $stmt->execute();
@@ -598,7 +624,7 @@ function db_result_to_geojson( $res ) {
       $sc = "00";
       $q = "000";
     }
-		if ( intval($r['type']) >= 2 ) { // PJB if in stationary mode (type==2), explicit circle
+		if ( intval($r['type']) > 2 ) { // PJB if in stationary mode (type > 2), explicit circle
 			$icn = "stationary";
       $sc = "00";
       $q = "000";
@@ -624,6 +650,7 @@ function db_result_to_geojson( $res ) {
       "td" => intval( $r['td'] ),
       "td_str" => secs2str(intval( $r['td'] )),
       "boe" => 'bah',
+      "pointtype" => $r['type'],
       //"icon_url" => 'leaflet/dist/images/lwt_map_icons/blue/'.$i.'.png'
       //"icon_url" => 'http://www.berck.se/trips/js/pp/'.$icn.$q.'.png' // DIRECTION!
       "icon_url" => 'http://www.berck.se/trips/js/arrows/'.$icn.'_'.$sc.'_'.$q.'.png' // DIRECTION!

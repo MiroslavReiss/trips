@@ -17,7 +17,7 @@
   
   BATCH upload...
   
-  http://berck.se/trips/show_user.php?userid=...
+  http://berck.se/trips/show_user.php?userid=f1a242745ed071207894f25ea30d18db
 */
 include("the_db.php");
 include("util.php");
@@ -47,7 +47,11 @@ $userid = $userid[0];
 
 if ( 1==1 ) {
   if ( ($lat != 0) and ( $lon != 0) ) { #0,0 should be ok...use 999,999?
-    add_pt( $db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $dt, $trackid, $comment );
+	  if ( $wkey === "e176e1487d5834a0" ) { // fake_python
+		  add_pt( $db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $dt, $trackid, $comment );
+		} else {
+	    add_pt( $db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $dt, $trackid, $comment );
+	  }
   } else {
     print "zero latlon.";
   }

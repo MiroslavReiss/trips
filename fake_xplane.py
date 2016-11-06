@@ -26,6 +26,8 @@ def project(pt, d, angle):
 
 # VIEW WITH http://berck.se/trips/lastseen2.php?rkey=0142593af753b1f0
 #
+print( "http://berck.se/trips/lastseen2.php?rkey=0142593af753b1f0" )
+
 trips_url = "http://berck.se/trips/add_pt.php"
 trips_wkey = "e176e1487d5834a0"
 
@@ -37,7 +39,7 @@ dt = int(time.time())
 lat = 56.26434113
 lon = 12.87838519
 cnt = 0
-
+    
 if True:
     delay = 1
     for x in range(0,4):
