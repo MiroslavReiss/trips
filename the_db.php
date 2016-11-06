@@ -57,6 +57,19 @@ function DBG($s) {
 	 }
 }
 
+function userid2name($db, $ui) {
+	if ( $db == NULL ) {
+    $db = get_db();
+  }
+  $stmt = $db->prepare('select name from users where userid = :ui');
+  $stmt->execute( array('ui' => $ui) );
+  $result = $stmt->fetchAll();
+  if ($result) {
+	  return $result[0]['name'];
+	}
+	return "UNKNOWN";
+}
+
 // Hard coded for B&B at the moment.
 function send_mail($s, $e="__NONE__", $a) {
 	require 'PHPMailer/PHPMailerAutoload.php';
@@ -324,7 +337,8 @@ id|lat|lon|acc|speed|bearing|alt|type|datetime|gpstime|userid|trackid|comment|di
 		  $adr = rev_geocode($lat, $lon);
 		  send_mail("Bengt stopped moving ".$dt_str, "__USRT__", $adr);
 		} else {
-			send_mail("Movement stopped(".$userid.") ".$dt_str, "__NONE__", $adr);
+			$name = userid2name($db, $userid);
+			send_mail("Movement stopped(".$name.") ".$dt_str, "__NONE__", $adr);
 		}
 	}
 	// Previous type is 3 or larger, and new type is 0 again
@@ -338,7 +352,8 @@ id|lat|lon|acc|speed|bearing|alt|type|datetime|gpstime|userid|trackid|comment|di
 		  $adr = rev_geocode($lat, $lon);
 		  send_mail("Bengt started moving ".$dt_str, "__USRT__", $adr);
 		} else {
-			send_mail("Movement started(".$userid.") ".$dt_str, "__NONE__", $adr);
+			$name = userid2name($db, $userid);
+			send_mail("Movement started(".$name.") ".$dt_str, "__NONE__", $adr);
 		}
 	}
   
@@ -346,7 +361,8 @@ id|lat|lon|acc|speed|bearing|alt|type|datetime|gpstime|userid|trackid|comment|di
   if ( ($type==0) && ($tdiff >= (24*3600)) ) {
 	  DBG("New activity.");
 	  $dt_str = date("Y-m-d H:i:s");
-	  send_mail("New activity(".$userid.") ".$dt_str, "__NONE__", "");
+		$name = userid2name($db, $userid);
+	  send_mail("New activity(".$name.") ".$dt_str, "__NONE__", "");
 	}
 	
   // types 0 and one are saved as new points, a higher type updates the current
@@ -549,6 +565,8 @@ function get_points_on_date( $db, $ui, $dt ) {
   }
   $now = time();//datetime(gpstime, 'localtime')) strftime('%Y-%m-%d %H:%M:%S',gpstime)
   try {
+	  // SUM(Quantity) AS TotalItemsOrdered
+	  // select sum(dist) as total_dist from points where userid = "fc011c0d9d440c5da0d30324f0bf90ce" order by id desc;
     $stmt = $db->prepare("select *,datetime(gpstime,'unixepoch','localtime') as dt_local,strftime('%Y-%m-%d',gpstime,'unixepoch','localtime') as dt,abs(strftime('%s','now')-gpstime) as td from points where dt = :dt and userid = :userid order by id desc");
     $stmt->execute( array(':dt' => $dt, ':userid' => $ui) );
     $result = $stmt->fetchAll();
