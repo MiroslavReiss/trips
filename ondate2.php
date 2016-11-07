@@ -243,7 +243,9 @@ function get_points(action) {
     for (var i = 0; i < res.features.length; i++) {
       //console.log(res.features[i].geometry.coordinates);
       ll = new L.LatLng(res.features[i].geometry.coordinates[0], res.features[i].geometry.coordinates[1]);
-      total_dist += res.features[i].properties.dist_m;
+      if ( i < res.features.length-1 ) { // because dist_m is dist from previous, we ignore the last (which is first)
+	      total_dist += res.features[i].properties.dist_m;
+	    }
       allpts.push(ll);
     }
     console.log("total_dist="+total_dist);
@@ -271,10 +273,11 @@ function get_points(action) {
     ans.pt_id = res.features[ans.last_idx].id;
     ans.icon_url = res.features[ans.last_idx].properties.icon_url;
 		
-		total_dist_str = "(total dist: "+total_dist.toFixed(0)+" m.)";
-		if ( total_dist > 100000 ) {
-			total_dist_str = "(total dist: "+(total_dist/1000.0).toFixed(0)+" km.)";
+		total_dist_str = "(total dist: "+total_dist.toFixed(0)+" m";
+		if ( total_dist > 10000 ) {
+			total_dist_str = "(total dist: "+(total_dist/1000.0).toFixed(1)+" km";
 		}
+		total_dist_str += ", "+(res.features.length).toFixed(0)+" points).";
 		
     ans.info_str = "Last seen at <img style=\"vertical-align: middle;\" src='"+ans.icon_url+"'/>: "+ans.latlon+" (+/- "+ans.acc+" m) on "+ans.dt_local+" ("+ans.td_str+" ago).<br/>Speed: "+ans.speed.toFixed(1)+" km/h ("+ans.kts.toFixed(1)+" kts), bearing: "+ans.bearing.toFixed(0)+" degrees. Altitude: "+ans.alt.toFixed(0)+" m ("+ans.alt_ft.toFixed(0)+" ft). Distance from previous point: "+ans.dist_m.toFixed(0)+" m. "+total_dist_str;
     $("#info_str").html(ans.info_str);

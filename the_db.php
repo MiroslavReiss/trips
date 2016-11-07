@@ -338,7 +338,7 @@ id|lat|lon|acc|speed|bearing|alt|type|datetime|gpstime|userid|trackid|comment|di
 		  send_mail("Bengt stopped moving ".$dt_str, "__USRT__", $adr);
 		} else {
 			$name = userid2name($db, $userid);
-			send_mail("Movement stopped(".$name.") ".$dt_str, "__NONE__", $adr);
+			//send_mail("Movement stopped(".$name.") ".$dt_str, "__NONE__", $adr);
 		}
 	}
 	// Previous type is 3 or larger, and new type is 0 again
@@ -353,7 +353,7 @@ id|lat|lon|acc|speed|bearing|alt|type|datetime|gpstime|userid|trackid|comment|di
 		  send_mail("Bengt started moving ".$dt_str, "__USRT__", $adr);
 		} else {
 			$name = userid2name($db, $userid);
-			send_mail("Movement started(".$name.") ".$dt_str, "__NONE__", $adr);
+			//send_mail("Movement started(".$name.") ".$dt_str, "__NONE__", $adr);
 		}
 	}
   
