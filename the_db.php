@@ -41,10 +41,15 @@ function get_userid_from_rkey( $db, $rk ) {
   if ( $db == NULL ) {
     $db = get_db();
   }
+  // https://www.sitepoint.com/community/t/converting-to-pdo/44090 About try/catch/errors
   $stmt = $db->prepare('select userid from users where rkey = :rkey');
-  $stmt->execute( array('rkey' => $rk) );
-  $result = $stmt->fetchAll();
-  return $result[0];
+  if ( $stmt ) {
+	  $stmt->execute( array('rkey' => $rk) );
+		$result = $stmt->fetchAll();
+		return $result[0];
+	} else {
+		die("DB error");
+	}
 }
 
 function DBG($s) {
@@ -260,7 +265,6 @@ function add_pt_OLD($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $al
     $stmt = $db->prepare("INSERT INTO points (userid, lat, lon, acc, speed, bearing, alt, type, datetime, gpstime, trackid, comment, dist) VALUES (:userid, :lat, :lon, :acc, :speed, :bearing, :alt, :type, :datetime, :gpstime, :trackid, :comment, :dist);");
     $stmt->execute( $data );
   }
-  $db->close();
 }
 
 /*
@@ -268,6 +272,11 @@ function add_pt_OLD($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $al
 */
 function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $dt, $trackid, $comment) {
 
+	// Ignore noise
+	if ( ($userid==="__UIDB__") && ($acc > 100) ) { // Berit
+	  return;
+	}
+	
   if ( $db == NULL ) {
     $db = get_db(); // maybe name depending on userid? But Db contains users also
   }
@@ -282,7 +291,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
   $ptype = 0; // default type
   $id = -1;
   $dist_limit = 50; // inside this is stationary
-  if ( $userid==="__UIDB__" ) { // Berit
+  if ( $userid==="__UIDB__" ) { // Berit. See above
 	  $dist_limit = 200;
 	}
 
@@ -327,14 +336,14 @@ id|lat|lon|acc|speed|bearing|alt|type|datetime|gpstime|userid|trackid|comment|di
   // we go to 0, then we start moving, but we should check if the last 2 (or more)
   // points are 0..., after one that is > 0 ? how to count moves?
   
+  $adr = "UNKNOWN";
   if ( $type == 3 ) {
 	  DBG("TYPE is 3, considered stopped.");
+	  $adr = rev_geocode($lat, $lon); // Could be saved in the comment field in the DB!
 	  $dt_str = date("Y-m-d H:i:s");
 	  if ( $userid==="__UIDB__" ) {
-		  $adr = rev_geocode($lat, $lon);
 		  send_mail("Berit stopped moving ".$dt_str, "__USRT__", $adr);
 		} else if ( $userid==="__UIDE__" ) {
-		  $adr = rev_geocode($lat, $lon);
 		  send_mail("Bengt stopped moving ".$dt_str, "__USRT__", $adr);
 		} else {
 			$name = userid2name($db, $userid);
@@ -342,6 +351,7 @@ id|lat|lon|acc|speed|bearing|alt|type|datetime|gpstime|userid|trackid|comment|di
 		}
 	}
 	// Previous type is 3 or larger, and new type is 0 again
+	// only store adr when type==3, we just mail to two chosen ones here
 	if ( ($ptype >= 2) && ($type == 0) ) {
 		DBG("TYPE is 0 again, considered moving.");
 		$dt_str = date("Y-m-d H:i:s");
@@ -369,16 +379,25 @@ id|lat|lon|acc|speed|bearing|alt|type|datetime|gpstime|userid|trackid|comment|di
   // type with new time and type.
   if ( $type > 1 ) {
 	  // We update the time and the type, not the position/bearing/etc!
-    $stmt = $db->prepare("UPDATE points SET datetime=".$dt.",gpstime=".$dt.",type=".$type.",acc=".$acc." WHERE (id=".$id.");");
+	  if ($type != 3) {
+		  // PJB TODO fix these two buggy inserts (no data() used?)
+	    //$stmt = $db->prepare("UPDATE points SET datetime=".$dt.",gpstime=".$dt.",type=".$type.",acc=".$acc." WHERE (id=".$id.");");
+			$data = array('dt' => $dt, 'tp' => $type, 'ac' => $acc, 'id' => $id);
+	    $stmt = $db->prepare("UPDATE points SET datetime=:dt,gpstime=:dt,type=:tp,acc=:ac WHERE (id=:id);");
+			$stmt->execute( $data );
+		} else {
+	    //$stmt = $db->prepare("UPDATE points SET datetime=".$dt.",gpstime=".$dt.",type=".$type.",acc=".$acc.",comment=".$adr." WHERE (id=".$id.");");
+	    $data = array('dt' => $dt, 'tp' => $type, 'ac' => $acc, 'id' => $id, 'cm' => $adr);
+	    $stmt = $db->prepare("UPDATE points SET datetime=:dt,gpstime=:dt,type=:tp,acc=:ac,comment=:cm WHERE (id=:id);");
+			$stmt->execute($data);
+	  }
     //error_log("UPDATE points SET datetime=".$dt.",gpstime=".$dt.",type=".$type." WHERE (id=".$id.");");
-    $data = array('datetime' => $dt, 'gpstime' => $dt, 'type' => $type);
-    $stmt->execute();
+
   } else { 
     $data = array( 'lat' => $lat, 'lon' => $lon, 'userid' => $userid, 'acc' => $acc, 'speed' => $speed, 'bearing' => $bearing, 'alt' => $alt, 'type' => $type, 'datetime' => $dt, 'gpstime' => $dt, 'trackid' => $trackid, 'comment' => $comment, 'dist' => $dist );
     $stmt = $db->prepare("INSERT INTO points (userid, lat, lon, acc, speed, bearing, alt, type, datetime, gpstime, trackid, comment, dist) VALUES (:userid, :lat, :lon, :acc, :speed, :bearing, :alt, :type, :datetime, :gpstime, :trackid, :comment, :dist);");
     $stmt->execute( $data );
   }
-  $db->close();
 }
 
 // this is prolly only called from tk10n-server

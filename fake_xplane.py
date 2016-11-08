@@ -56,8 +56,8 @@ if True:
 
     # stationary
     print( lat, lon )
-    delay = 20
-    for x in range(0,4):
+    delay = 2
+    for x in range(0,6):
         time.sleep(delay)
         dt += delay
         full = trips_url+"?lat="+str(lat)+"&lon="+str(lon)+"&wkey="+trips_wkey+"&dt="+str(dt)+"&comment=pt"+str(cnt)
