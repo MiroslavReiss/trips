@@ -283,7 +283,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
   //$data = array( 'lat' => 53, 'lon' => 12, 'userid' => "xxx", 'datetime' => "2011-09-12 20:02:11" );
 
   // Get previous latlon.
-  $stmt = $db->prepare("select * from points where userid = :userid order by id desc limit 1");
+  $stmt = $db->prepare("select * from points where userid = :userid order by id desc limit 1"); // type >= 0 (so we can store -1 and ignore)
   $stmt->execute( array(':userid' => $userid) );
   $result = $stmt->fetchAll();
   $dist = -1;
@@ -352,7 +352,7 @@ id|lat|lon|acc|speed|bearing|alt|type|datetime|gpstime|userid|trackid|comment|di
 	}
 	// Previous type is 3 or larger, and new type is 0 again
 	// only store adr when type==3, we just mail to two chosen ones here
-	if ( ($ptype >= 2) && ($type == 0) ) {
+	if ( ($ptype > 2) && ($type == 0) ) {
 		DBG("TYPE is 0 again, considered moving.");
 		$dt_str = date("Y-m-d H:i:s");
 	  if ( $userid==="__UIDB__" ) {
@@ -408,7 +408,7 @@ function add_info($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt,
   }
 
   // Get previous latlon.
-  $stmt = $db->prepare("select * from info where userid = :userid order by id desc limit 1");
+  $stmt = $db->prepare("select * from info where userid = :userid and type >= 0 order by id desc limit 1"); // type >= 0 (so we can store -1 and ignore)
   $stmt->execute( array(':userid' => $userid) );
   $result = $stmt->fetchAll();
   $dist = -1;
@@ -455,7 +455,7 @@ function get_points( $db, $ui, $grp ) {
     $db = get_db();
   }
   try {
-    $stmt = $db->prepare('select *,strftime("%Y%m%d", datetime) as grp from points where `grp` = :grp and userid = :userid');
+    $stmt = $db->prepare('select *,strftime("%Y%m%d", datetime) as grp from points where `grp` = :grp and userid = :userid and type >= 0'); // type >= 0 (so we can store -1 and ignore)
     $stmt->execute( array(':grp' => $grp, ':userid' => $ui) );
     $result = $stmt->fetchAll();
     return $result;
@@ -472,7 +472,7 @@ function get_last_point( $db, $ui, $n ) {
   }
   $now = time();//datetime(gpstime, 'localtime')) strftime('%Y-%m-%d %H:%M:%S',gpstime)
   try {
-    $stmt = $db->prepare("select *,datetime(gpstime,'unixepoch','localtime') as dt_local,abs(strftime('%s','now')-gpstime) as td from points where userid = :userid order by id desc limit :n");
+    $stmt = $db->prepare("select *,datetime(gpstime,'unixepoch','localtime') as dt_local,abs(strftime('%s','now')-gpstime) as td from points where userid = :userid and type >= 0 order by id desc limit :n"); // type >= 0 (so we can store -1 and ignore)
     $stmt->execute( array(':userid' => $ui, 'n' => $n) );
     $result = $stmt->fetchAll();
     return $result;
@@ -488,7 +488,7 @@ function get_last_info( $db, $ui ) {
   }
   $now = time();//datetime(gpstime, 'localtime')) strftime('%Y-%m-%d %H:%M:%S',gpstime)
   try {
-    $stmt = $db->prepare("select *,datetime(gpstime,'unixepoch','localtime') as dt_local,abs(strftime('%s','now')-gpstime) as td from info where userid = :userid order by id desc limit 1");
+    $stmt = $db->prepare("select *,datetime(gpstime,'unixepoch','localtime') as dt_local,abs(strftime('%s','now')-gpstime) as td from info where userid = :userid order by id desc limit 1"); 
     $stmt->execute( array(':userid' => $ui) );
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
     return $result;
@@ -512,7 +512,7 @@ function get_last_stationary( $db, $ui ) {
     $db = get_db();
   }
   try {
-    $stmt = $db->prepare("select * from points where userid = :userid order by id desc limit 2");
+    $stmt = $db->prepare("select * from points where userid = :userid and type >= 0 order by id desc limit 2"); // type >= 0 (so we can store -1 and ignore)
     $stmt->execute( array(':userid' => $ui) );
     $result = $stmt->fetchAll();
     
@@ -551,7 +551,7 @@ function get_all_points( $db, $ui ) {
   }
   $now = time();//datetime(gpstime, 'localtime')) strftime('%Y-%m-%d %H:%M:%S',gpstime)
   try {
-    $stmt = $db->prepare("select *,datetime(gpstime,'unixepoch','localtime') as dt_local,abs(strftime('%s','now')-gpstime) as td from points where userid = :userid order by id desc");
+    $stmt = $db->prepare("select *,datetime(gpstime,'unixepoch','localtime') as dt_local,abs(strftime('%s','now')-gpstime) as td from points where userid = :userid and type >= 0 order by id desc"); // type >= 0 (so we can store -1 and ignore)
     $stmt->execute( array(':userid' => $ui) );
     $result = $stmt->fetchAll();
     return $result;
@@ -568,7 +568,7 @@ function get_dates( $db, $ui, $n ) {
   }
   $now = time();//datetime(gpstime, 'localtime')) strftime('%Y-%m-%d %H:%M:%S',gpstime)
   try {
-    $stmt = $db->prepare("select distinct date(gpstime,'unixepoch','localtime') as d from points where userid = :userid order by d desc limit :n");
+    $stmt = $db->prepare("select distinct date(gpstime,'unixepoch','localtime') as d from points where userid = :userid order by d desc limit :n"); // type >= 0 (so we can store -1 and ignore)
     $stmt->execute( array(':userid' => $ui, 'n' => $n) );
     $result = $stmt->fetchAll();
     return $result;
@@ -586,7 +586,7 @@ function get_points_on_date( $db, $ui, $dt ) {
   try {
 	  // SUM(Quantity) AS TotalItemsOrdered
 	  // select sum(dist) as total_dist from points where userid = "fc011c0d9d440c5da0d30324f0bf90ce" order by id desc;
-    $stmt = $db->prepare("select *,datetime(gpstime,'unixepoch','localtime') as dt_local,strftime('%Y-%m-%d',gpstime,'unixepoch','localtime') as dt,abs(strftime('%s','now')-gpstime) as td from points where dt = :dt and userid = :userid order by id desc");
+    $stmt = $db->prepare("select *,datetime(gpstime,'unixepoch','localtime') as dt_local,strftime('%Y-%m-%d',gpstime,'unixepoch','localtime') as dt,abs(strftime('%s','now')-gpstime) as td from points where dt = :dt and userid = :userid and type >= 0 order by id desc"); // type >= 0 (so we can store -1 and ignore)
     $stmt->execute( array(':dt' => $dt, ':userid' => $ui) );
     $result = $stmt->fetchAll();
     return $result;
@@ -602,7 +602,7 @@ function get_point_count( $db, $ui ) {
     $db = get_db();
   }
   try {
-    $stmt = $db->prepare("select count(*) from points where userid = :userid");
+    $stmt = $db->prepare("select count(*) from points where userid = :userid and type >= 0"); // type >= 0 (so we can store -1 and ignore)
     $stmt->execute( array(':userid' => $ui) );
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
     return $result;
