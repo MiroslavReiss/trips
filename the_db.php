@@ -176,7 +176,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
 
 	// Ignore noise
 	if ( ($userid==="__UIDB__") && ($acc > 100) ) { // Berit
-	  return;
+	  //return;
 	}
 	
   if ( $db == NULL ) {
@@ -185,7 +185,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
   //$data = array( 'lat' => 53, 'lon' => 12, 'userid' => "xxx", 'datetime' => "2011-09-12 20:02:11" );
 
   // Get previous latlon.
-  $stmt = $db->prepare("select * from points where userid = :userid order by id desc limit 1"); // type >= 0 (so we can store -1 and ignore)
+  $stmt = $db->prepare("select * from points where userid = :userid and type >= 0 order by id desc limit 1"); // type >= 0 (so we can store -1 and ignore)
   $stmt->execute( array(':userid' => $userid) );
   $result = $stmt->fetchAll();
   $dist = -1;
@@ -238,6 +238,13 @@ id|lat|lon|acc|speed|bearing|alt|type|datetime|gpstime|userid|trackid|comment|di
   // we go to 0, then we start moving, but we should check if the last 2 (or more)
   // points are 0..., after one that is > 0 ? how to count moves?
   
+	if ( ($userid==="__UIDB__") && ($acc > 100) ) { // Berit
+	  $type = -1;
+	} //fc011c0d9d440c5da0d30324f0bf90ce
+	if ( ($userid==="fc011c0d9d440c5da0d30324f0bf90ce") && ($acc > 100) ) { // xplane
+	  $type = -1;
+	}
+	
   $adr = "UNKNOWN";
   if ( $type == 3 ) {
 	  DBG("TYPE is 3, considered stopped.");
@@ -310,7 +317,7 @@ function add_info($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt,
   }
 
   // Get previous latlon.
-  $stmt = $db->prepare("select * from info where userid = :userid and type >= 0 order by id desc limit 1"); // type >= 0 (so we can store -1 and ignore)
+  $stmt = $db->prepare("select * from info where userid = :userid order by id desc limit 1"); // type >= 0 (so we can store -1 and ignore)
   $stmt->execute( array(':userid' => $userid) );
   $result = $stmt->fetchAll();
   $dist = -1;
