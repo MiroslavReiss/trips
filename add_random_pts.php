@@ -15,12 +15,14 @@
        ...
   sqlite> select *,strftime("%Y%m%d", datetime) as grp from points where grp = "20110912";
   
+  BATCH upload...
+  
+  http://berck.se/trips/show_user.php?userid=f1a242745ed071207894f25ea30d18db
 */
 include("the_db.php");
 include("util.php");
 
-#$wkey = "9981dfe16d098a7a";
-$wkey = "95a074fe80a50c40"; //xplane
+$wkey = "e176e1487d5834a0"; //xplane
 
 $db = get_db();
 $userid = get_userid_from_wkey($db, $wkey);
@@ -33,5 +35,5 @@ for ( $i = 0; $i < 1; $i++ ) {
 #add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $dt, $trackid, $comment) 
   add_pt( $db, $userid, $wkey, $lat, $lon, 0, 0, 0, 0, $dt, "random","random" );
 }
-print $userid."<br/>".$dt."</br>".$lat."<br/>".$lon."</br>";
+print $userid."<br/>".$dt."</br>".$lat."<br/>".$lon."</br>\n";
 ?>
