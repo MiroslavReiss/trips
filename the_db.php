@@ -1,9 +1,18 @@
 <?php
 
-function get_db() {
-  $DBNAME="sqlite:trips.sqll";
+/*
+	We need a better way to switch DB, maybe open two when getting DB?
+	Or a seperate get_points_db()?
+	
+	$userinfo = get_all($db, $ui);
+	$db = NULL;
+	$db = get_db($userinfo["dbname"]);
+*/
+function get_db($dbfile="trips.sqll") {
+  $DBNAME="sqlite:".$dbfile; //trips.sqll";
   $db = null;
-
+	//DBG($DBNAME);
+	
   try {
     //create or open the database
     $db = new PDO($DBNAME);
@@ -185,6 +194,8 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
   //$data = array( 'lat' => 53, 'lon' => 12, 'userid' => "xxx", 'datetime' => "2011-09-12 20:02:11" );
 
 	$userinfo = get_all($db, $userid);
+	$db = NULL;
+	$db = get_db($userinfo["dbname"]);
 	
   // Get previous latlon.
   $stmt = $db->prepare("select * from points where userid = :userid and type >= 0 order by id desc limit 1"); // type >= 0 (so we can store -1 and ignore)
@@ -313,6 +324,7 @@ function get_all( $db, $ui ) {
   if ( $db == NULL ) {
     $db = get_db();
   }
+
   $stmt = $db->prepare('select * from users where userid = :ui');
   $stmt->execute( array('ui' => $ui) );
   $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -348,6 +360,10 @@ function get_points( $db, $ui, $grp ) {
   if ( $db == NULL ) {
     $db = get_db();
   }
+ 	$userinfo = get_all($db, $ui);
+	$db = NULL;
+	$db = get_db($userinfo["dbname"]);
+
   try {
     $stmt = $db->prepare('select *,strftime("%Y%m%d", datetime) as grp from points where `grp` = :grp and userid = :userid and type >= 0'); // type >= 0 (so we can store -1 and ignore)
     $stmt->execute( array(':grp' => $grp, ':userid' => $ui) );
@@ -364,6 +380,10 @@ function get_last_point( $db, $ui, $n ) {
   if ( $db == NULL ) {
     $db = get_db();
   }
+ 	$userinfo = get_all($db, $ui);
+	$db = NULL;
+	$db = get_db($userinfo["dbname"]);
+
   $now = time();//datetime(gpstime, 'localtime')) strftime('%Y-%m-%d %H:%M:%S',gpstime)
   try {
     $stmt = $db->prepare("select *,datetime(gpstime,'unixepoch','localtime') as dt_local,abs(strftime('%s','now')-gpstime) as td from points where userid = :userid and type >= 0 order by id desc limit :n"); // type >= 0 (so we can store -1 and ignore)
@@ -405,6 +425,10 @@ function get_last_stationary( $db, $ui ) {
   if ( $db == NULL ) {
     $db = get_db();
   }
+ 	$userinfo = get_all($db, $ui);
+	$db = NULL;
+	$db = get_db($userinfo["dbname"]);
+
   try {
     $stmt = $db->prepare("select * from points where userid = :userid and type >= 0 order by id desc limit 2"); // type >= 0 (so we can store -1 and ignore)
     $stmt->execute( array(':userid' => $ui) );
@@ -443,6 +467,10 @@ function get_all_points( $db, $ui ) {
   if ( $db == NULL ) {
     $db = get_db();
   }
+ 	$userinfo = get_all($db, $ui);
+	$db = NULL;
+	$db = get_db($userinfo["dbname"]);
+
   $now = time();//datetime(gpstime, 'localtime')) strftime('%Y-%m-%d %H:%M:%S',gpstime)
   try {
     $stmt = $db->prepare("select *,datetime(gpstime,'unixepoch','localtime') as dt_local,abs(strftime('%s','now')-gpstime) as td from points where userid = :userid and type >= 0 order by id desc"); // type >= 0 (so we can store -1 and ignore)
@@ -460,6 +488,10 @@ function get_dates( $db, $ui, $n ) {
   if ( $db == NULL ) {
     $db = get_db();
   }
+  $userinfo = get_all($db, $ui);
+	$db = NULL;
+	$db = get_db($userinfo["dbname"]);
+
   $now = time();//datetime(gpstime, 'localtime')) strftime('%Y-%m-%d %H:%M:%S',gpstime)
   try {
     $stmt = $db->prepare("select distinct date(gpstime,'unixepoch','localtime') as d from points where userid = :userid order by d desc limit :n"); // type >= 0 (so we can store -1 and ignore)
@@ -476,6 +508,10 @@ function get_points_on_date( $db, $ui, $dt ) {
   if ( $db == NULL ) {
     $db = get_db();
   }
+ 	$userinfo = get_all($db, $ui);
+	$db = NULL;
+	$db = get_db($userinfo["dbname"]);
+
   $now = time();//datetime(gpstime, 'localtime')) strftime('%Y-%m-%d %H:%M:%S',gpstime)
   try {
 	  // SUM(Quantity) AS TotalItemsOrdered
@@ -495,6 +531,10 @@ function get_point_count( $db, $ui ) {
   if ( $db == NULL ) {
     $db = get_db();
   }
+ 	$userinfo = get_all($db, $ui);
+	$db = NULL;
+	$db = get_db($userinfo["dbname"]);
+
   try {
     $stmt = $db->prepare("select count(*) from points where userid = :userid and type >= 0"); // type >= 0 (so we can store -1 and ignore)
     $stmt->execute( array(':userid' => $ui) );
@@ -709,7 +749,9 @@ if (php_sapi_name() == "cli") {
 	print( "\n" );
 	print( microtime_float() );
 	print( "\n" );
-	print( rev_geocode(56.33821331, 12.89528847) );
+  $lat = sprintf("%.4f", 55.0+(rand(0,50)/10.0));
+  $lon = sprintf("%.4f", 12.0+(rand(0,40)/10.0));
+	print( $lat.",".$lon.":".rev_geocode($lat, $lon) );
 	print( "\n" );
 	print( microtime_float() );
 	print( "\n" );
