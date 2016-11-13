@@ -184,6 +184,8 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
   }
   //$data = array( 'lat' => 53, 'lon' => 12, 'userid' => "xxx", 'datetime' => "2011-09-12 20:02:11" );
 
+	$userinfo = get_all($db, $userid);
+	
   // Get previous latlon.
   $stmt = $db->prepare("select * from points where userid = :userid and type >= 0 order by id desc limit 1"); // type >= 0 (so we can store -1 and ignore)
   $stmt->execute( array(':userid' => $userid) );
@@ -192,11 +194,9 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
   $type = 0; // store
   $ptype = 0; // default type
   $id = -1;
-  $dist_limit = 20; // inside this is stationary
-  if ( $userid==="__UIDB__" ) { // Berit. See above
-	  $dist_limit = 20;
-	}
-
+  $dist_limit = $userinfo["statdist"]; // inside this is stationary
+	$max_acc = $userinfo["maxacc"];
+	
   if ( $result ) { // The point last saved
     $row = $result[0];
     $lat1 = $row['lat'];
@@ -215,8 +215,8 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
     }
   } // end result
    
-  // Accuracy > 100 is stored with type -1, and is not "counted".
-	if ( $acc > 100 ) { // should be $dist_limit b/c the stationary check
+  // Accuracy > nnn is stored with type -1, and is not "counted".
+	if ( $acc > $max_acc ) { // should be $dist_limit b/c the stationary check
 	  $type = -1; // stored, but not interpreted
 	}
 	
@@ -307,6 +307,16 @@ function add_info($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt,
   $data = array( 'lat' => $lat, 'lon' => $lon, 'userid' => $userid, 'acc' => $acc, 'speed' => $speed, 'bearing' => $bearing, 'alt' => $alt, 'type' => $type, 'datetime' => $dt, 'gpstime' => $dt, 'trackid' => $trackid, 'comment' => $comment, 'dist' => $dist );
   $stmt = $db->prepare("INSERT INTO info (userid, lat, lon, acc, speed, bearing, alt, type, datetime, gpstime, trackid, comment, dist) VALUES (:userid, :lat, :lon, :acc, :speed, :bearing, :alt, :type, :datetime, :gpstime, :trackid, :comment, :dist);");
   $stmt->execute( $data );
+}
+
+function get_all( $db, $ui ) {
+  if ( $db == NULL ) {
+    $db = get_db();
+  }
+  $stmt = $db->prepare('select * from users where userid = :ui');
+  $stmt->execute( array('ui' => $ui) );
+  $result = $stmt->fetch(PDO::FETCH_ASSOC);
+  return $result;
 }
 
 function get_email( $db, $em ) {
@@ -685,6 +695,23 @@ function add_gpx($url) {
     }
     return $neg.$l.".".$r;
   }
+}
 
+if (php_sapi_name() == "cli") {
+	function microtime_float() {
+    list($usec, $sec) = explode(" ", microtime());
+    return ((float)$usec + (float)$sec);
+	}
+	print( "\n" );
+	print( microtime_float() );
+	print( "\n" );
+	print_r( get_all(NULL, "f1a242745ed071207894f25ea30d18db") );
+	print( "\n" );
+	print( microtime_float() );
+	print( "\n" );
+	print( rev_geocode(56.33821331, 12.89528847) );
+	print( "\n" );
+	print( microtime_float() );
+	print( "\n" );
 }
 ?>
