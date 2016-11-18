@@ -198,7 +198,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
   // Get previous latlon.
   $result = null;
   try {
-	  $stmt = $db->prepare("select * from points where userid = :userid and type >= 0 order by id desc limit 1"); // type >= 0 (so we can store -1 and ignore)
+	  $stmt = $db->prepare("select * from points where userid = :userid and type >= 0 order by id desc limit 1"); // type >= 0 (can store -1 and ignore)
 		$stmt->execute( array(':userid' => $userid) );
 		$result = $stmt->fetchAll();
 	} catch (PDOException $e) {
@@ -772,7 +772,6 @@ if (php_sapi_name() == "cli") {
 	print( microtime_float() );
 	print( "\n" );
 	send_mail("CLI TEST", NULL, $adr, "0142593af753b1f0");
-	// 3|fc011c0d9d440c5da0d30324f0bf90ce|0142593af753b1f0|e176e1487d5834a0|xplane||2013-06-07 18:53:51
 	print( "\n" );
 	print( microtime_float() );
 	print( "\nadd_pt()" );
