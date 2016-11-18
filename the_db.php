@@ -85,7 +85,7 @@ function userid2name($db, $ui) {
 }
 
 // Hard coded for B&B at the moment.
-function send_mail($s, $e="__NONE__", $a) {
+function send_mail($s, $e="__NONE__", $a, $rk="__RKYB__") {
 	require 'PHPMailer/PHPMailerAutoload.php';
 	DBG("mail");
 	$mail = new PHPMailer;
@@ -111,8 +111,9 @@ function send_mail($s, $e="__NONE__", $a) {
 
 	$mail->Subject = $s;
 	$message  = "<p>trips webservice\n";
-	$message .= "<p><a href=\"http://berck.se/trips/lastseen2.php?rkey=__RKYB__\">trips website</a>\n";
+	$message .= "<p><a href=\"http://berck.se/trips/lastseen2.php?rkey=".$rk."\">trips website</a>\n";
 	$message .= "<p>".$a;
+	$message .= "<p>".date("Y-m-d H:i:s");
 	$mail->Body    = $message;
 	$mail->AltBody = $message;
 
@@ -182,11 +183,6 @@ CREATE TABLE points (
 	NEW.
 */
 function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $dt, $trackid, $comment) {
-
-	// Ignore noise
-	if ( ($userid==="__UIDB__") && ($acc > 100) ) { // Berit
-	  //return;
-	}
 	
   if ( $db == NULL ) {
     $db = get_db(); // maybe name depending on userid? But Db contains users also
@@ -217,7 +213,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
     $tdiff = intVal($dt)-intVal($row['gpstime']);
     $ptype = intVal($row['type']); // previous type
     
-    if ( ($dist < $dist_limit) && ($tdiff < (24*3600)) ) { // less than 50 meters COULD BE A USER PARAMETER!
+    if ( ($dist < $dist_limit) && ($tdiff < (24*3600)) ) { // approx. same pos, and < 1 day
       if ( $ptype == 0 ) {
         $type = 1; //PJB  store as new point type 1
       } else {
@@ -225,10 +221,13 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
       }
     }
   } // end result
-   
+
   // Accuracy > nnn is stored with type -1, and is not "counted".
 	if ( $acc > $max_acc ) { // should be $dist_limit b/c the stationary check
 	  $type = -1; // stored, but not interpreted
+	}
+	if ( $userid=="f37282ef7b11331d499f6dc7ba98b224" ) {
+		$type = -1;	
 	}
 	
   $adr = "UNKNOWN";
@@ -237,11 +236,11 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
 	  $adr = rev_geocode($lat, $lon); // Could be saved in the comment field in the DB!
 	  $dt_str = date("Y-m-d H:i:s");
 	  if ( $userid==="__UIDB__" ) {
-		  send_mail("Berit stopped moving ".$dt_str, "__USRT__", $adr);
+		  send_mail("Berit stopped moving ".$dt_str, "__USRT__", $adr, $userinfo["rkey"]);
 		} else if ( $userid==="__UIDE__" ) {
-		  send_mail("Bengt stopped moving ".$dt_str, "__USRT__", $adr);
+		  send_mail("Bengt stopped moving ".$dt_str, "__USRT__", $adr, $userinfo["rkey"]);
 		} else {
-			$name = userid2name($db, $userid);
+			$name = $userinfo["name"]; //userid2name($db, $userid);
 			//send_mail("Movement stopped(".$name.") ".$dt_str, "__NONE__", $adr);
 		}
 	}
@@ -249,15 +248,17 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
 	// only store adr when type==3, we just mail to two chosen ones here
 	if ( ($ptype > 2) && ($type == 0) ) {
 		DBG("TYPE is 0 again, considered moving.");
+		DBG("PTYPE=".$ptype." TYPE=".$type);
+		
 		$dt_str = date("Y-m-d H:i:s");
 	  if ( $userid==="__UIDB__" ) {
 		  $adr = rev_geocode($lat, $lon);
-		  send_mail("Berit started moving ".$dt_str, "__USRT__", $adr);
+		  send_mail("Berit started moving ".$dt_str, "__USRT__", $adr, $userinfo["rkey"]);
 		} else if ( $userid==="__UIDE__" ) {
 		  $adr = rev_geocode($lat, $lon);
-		  send_mail("Bengt started moving ".$dt_str, "__USRT__", $adr);
+		  send_mail("Bengt started moving ".$dt_str, "__USRT__", $adr, $userinfo["rkey"]);
 		} else {
-			$name = userid2name($db, $userid);
+			$name = $userinfo["name"]; //userid2name($db, $userid);
 			//send_mail("Movement started(".$name.") ".$dt_str, "__NONE__", $adr);
 		}
 	}
@@ -267,7 +268,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
 	  DBG("New activity.");
 	  $dt_str = date("Y-m-d H:i:s");
 		$name = userid2name($db, $userid);
-	  send_mail("New activity(".$name.") ".$dt_str, "__NONE__", "");
+	  send_mail("New activity(".$name.") ".$dt_str, "__NONE__", "", $userinfo["rkey"]);
 	}
 	
   // types 0 and one are saved as new points, a higher type updates the current
@@ -287,8 +288,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
 			$stmt->execute($data);
 	  }
     //error_log("UPDATE points SET datetime=".$dt.",gpstime=".$dt.",type=".$type." WHERE (id=".$id.");");
-
-  } else { 
+  } else { // type <= 1, all these are stored as individual points
     $data = array( 'lat' => $lat, 'lon' => $lon, 'userid' => $userid, 'acc' => $acc, 'speed' => $speed, 'bearing' => $bearing, 'alt' => $alt, 'type' => $type, 'datetime' => $dt, 'gpstime' => $dt, 'trackid' => $trackid, 'comment' => $comment, 'dist' => $dist );
     $stmt = $db->prepare("INSERT INTO points (userid, lat, lon, acc, speed, bearing, alt, type, datetime, gpstime, trackid, comment, dist) VALUES (:userid, :lat, :lon, :acc, :speed, :bearing, :alt, :type, :datetime, :gpstime, :trackid, :comment, :dist);");
     $stmt->execute( $data );
@@ -494,7 +494,7 @@ function get_dates( $db, $ui, $n ) {
 
   $now = time();//datetime(gpstime, 'localtime')) strftime('%Y-%m-%d %H:%M:%S',gpstime)
   try {
-    $stmt = $db->prepare("select distinct date(gpstime,'unixepoch','localtime') as d from points where userid = :userid order by d desc limit :n"); // type >= 0 (so we can store -1 and ignore)
+    $stmt = $db->prepare("select distinct date(gpstime,'unixepoch','localtime') as d from points where userid = :userid and type >= 0 order by d desc limit :n"); // type >= 0 (so we can store -1 and ignore)
     $stmt->execute( array(':userid' => $ui, 'n' => $n) );
     $result = $stmt->fetchAll();
     return $result;
@@ -751,9 +751,12 @@ if (php_sapi_name() == "cli") {
 	print( "\n" );
   $lat = sprintf("%.4f", 55.0+(rand(0,50)/10.0));
   $lon = sprintf("%.4f", 12.0+(rand(0,40)/10.0));
-	print( $lat.",".$lon.":".rev_geocode($lat, $lon) );
+  $adr = rev_geocode($lat, $lon);
+	print( $lat.",".$lon.":".$adr );
 	print( "\n" );
 	print( microtime_float() );
 	print( "\n" );
+	send_mail("CLI TEST", NULL, $adr, "0142593af753b1f0");
+
 }
 ?>
