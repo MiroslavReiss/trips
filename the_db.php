@@ -21,6 +21,7 @@ function get_db($dbfile="trips.sqll") {
   }
   $db->setAttribute(PDO::ATTR_TIMEOUT, 10);
   $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
+  //$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
   return $db;
 }
 
@@ -71,6 +72,7 @@ function DBG($s) {
 	 }
 }
 
+// deprecated
 function userid2name($db, $ui) {
 	if ( $db == NULL ) {
     $db = get_db();
@@ -86,7 +88,7 @@ function userid2name($db, $ui) {
 
 // Hard coded for B&B at the moment.
 function send_mail($s, $e="__NONE__", $a, $rk="__RKYB__") {
-	require 'PHPMailer/PHPMailerAutoload.php';
+	require_once( 'PHPMailer/PHPMailerAutoload.php');
 	DBG("mail");
 	$mail = new PHPMailer;
 
@@ -191,12 +193,26 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
 
 	$userinfo = get_all($db, $userid);
 	$db = NULL;
-	$db = get_db($userinfo["dbname"]);
+	$db = get_db($userinfo["dbname"]);	
 	
   // Get previous latlon.
-  $stmt = $db->prepare("select * from points where userid = :userid and type >= 0 order by id desc limit 1"); // type >= 0 (so we can store -1 and ignore)
-  $stmt->execute( array(':userid' => $userid) );
-  $result = $stmt->fetchAll();
+  /*
+  $result = null;
+  try {
+	  $stmt = $db->prepare("select * from points where userid = :userid and type >= 0 order by id desc limit 1"); // type >= 0 (so we can store -1 and ignore)
+		$stmt->execute( array(':userid' => $userid) );
+		$result = $stmt->fetchAll();
+	} catch (PDOException $e) {
+    $errorMsg = $e->getMessage();
+    DBG( $errorMsg );
+    return;
+  }
+  */
+  $result = null;
+	$stmt = $db->prepare("select * from points where userid = :userid and type >= 0 order by id desc limit 1"); // type >= 0 (we can store -1 and ignore)
+	$stmt->execute( array(':userid' => $userid) );
+	$result = $stmt->fetchAll();
+
   $dist = -1;
   $type = 0; // store
   $ptype = 0; // default type
@@ -267,7 +283,7 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
   if ( ($type==0) && ($tdiff >= (24*3600)) ) {
 	  DBG("New activity.");
 	  $dt_str = date("Y-m-d H:i:s");
-		$name = userid2name($db, $userid);
+		$name = $userinfo["name"]; //userid2name($db, $userid);
 	  send_mail("New activity(".$name.") ".$dt_str, "__NONE__", "", $userinfo["rkey"]);
 	}
 	
@@ -745,7 +761,7 @@ if (php_sapi_name() == "cli") {
 	print( "\n" );
 	print( microtime_float() );
 	print( "\n" );
-	print_r( get_all(NULL, "f1a242745ed071207894f25ea30d18db") );
+	print_r( get_all(NULL, "fc011c0d9d440c5da0d30324f0bf90ce") );
 	print( "\n" );
 	print( microtime_float() );
 	print( "\n" );
@@ -757,6 +773,15 @@ if (php_sapi_name() == "cli") {
 	print( microtime_float() );
 	print( "\n" );
 	send_mail("CLI TEST", NULL, $adr, "0142593af753b1f0");
-
+	// 3|fc011c0d9d440c5da0d30324f0bf90ce|0142593af753b1f0|e176e1487d5834a0|xplane||2013-06-07 18:53:51
+	print( "\n" );
+	print( microtime_float() );
+	print( "\nadd_pt()" );
+	add_pt(NULL, "fc011c0d9d440c5da0d30324f0bf90ce", "e176e1487d5834a0", $lat, $lon, 1, 1, 8, 88, time(), "ti0", "CLI Test");
+	print( "\n" );
+	print( microtime_float() );
+	print( "\nget_last_point()" );
+	$lp = get_last_point( NULL, "fc011c0d9d440c5da0d30324f0bf90ce", 1 );
+	print_r( $lp );
 }
 ?>
