@@ -88,7 +88,7 @@ function userid2name($db, $ui) {
 
 // Hard coded for B&B at the moment.
 function send_mail($s, $e="__NONE__", $a, $rk="__RKYB__") {
-	require_once( 'PHPMailer/PHPMailerAutoload.php');
+	require_once('PHPMailer/PHPMailerAutoload.php');
 	DBG("mail");
 	$mail = new PHPMailer;
 
@@ -196,7 +196,6 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
 	$db = get_db($userinfo["dbname"]);	
 	
   // Get previous latlon.
-  /*
   $result = null;
   try {
 	  $stmt = $db->prepare("select * from points where userid = :userid and type >= 0 order by id desc limit 1"); // type >= 0 (so we can store -1 and ignore)
@@ -207,12 +206,12 @@ function add_pt($db, $userid, $wkey, $lat, $lon, $acc, $speed, $bearing, $alt, $
     DBG( $errorMsg );
     return;
   }
-  */
+  /*
   $result = null;
 	$stmt = $db->prepare("select * from points where userid = :userid and type >= 0 order by id desc limit 1"); // type >= 0 (we can store -1 and ignore)
 	$stmt->execute( array(':userid' => $userid) );
 	$result = $stmt->fetchAll();
-
+	*/
   $dist = -1;
   $type = 0; // store
   $ptype = 0; // default type
